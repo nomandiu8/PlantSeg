@@ -6,6 +6,12 @@ import base64
 from gradio_client import Client, handle_file
 
 class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps({"status": "running", "message": "API is active. Please use POST to submit images for prediction."}).encode())
+
     def do_POST(self):
         try:
             content_length = int(self.headers['Content-Length'])
