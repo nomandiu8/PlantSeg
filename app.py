@@ -72,8 +72,8 @@ CLS_CKPT = get_model_path("ConvNeXtV2Tiny_best.pt")
 SEG_CKPT = get_model_path("DeepLabV3Plus_efficientnet-b3.pt")
 CLASS_NAMES_FILE = HERE / "class_names.json"
 
-IMG_SIZE_CLS = 384   # matches Stage-1 ConvNeXtV2-Tiny training
-IMG_SIZE_SEG = 512   # matches Stage-2 DeepLabV3+ training
+IMG_SIZE_CLS = 224   # matches user's ConvNeXtV2-Tiny training
+IMG_SIZE_SEG = 224   # matches user's DeepLabV3+ training
 MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
 
