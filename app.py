@@ -189,17 +189,42 @@ def diagnose_image(pil_img: Image.Image):
 
 
 # ============================================================================
-# VISUALISATION (renders the same three panels as the paper's Figure 24, per image)
+# VISUALISATION
 # ============================================================================
-def make_overlay(base_img: Image.Image, mask_or_cam: np.ndarray, cmap: str, alpha: float = 0.45):
-    import matplotlib.cm as cm
-
+def make_lesion_overlay(base_img: Image.Image, mask: np.ndarray, alpha: float = 0.5):
+    """Lesion mask: red fill + bright green contour border for clarity."""
+    import cv2
     base = np.asarray(base_img).astype(np.float32) / 255.0
-    colormap = cm.get_cmap(cmap)
-    colored = colormap(mask_or_cam)[..., :3]
-    blended = (1 - alpha * mask_or_cam[..., None]) * base + (alpha * mask_or_cam[..., None]) * colored
-    blended = np.clip(blended, 0, 1)
-    return Image.fromarray((blended * 255).astype(np.uint8))
+    h, w = base.shape[:2]
+    mask_rs = np.array(Image.fromarray((mask * 255).astype(np.uint8)).resize((w, h))) / 255.0
+    red_overlay = np.zeros_like(base)
+    red_overlay[..., 0] = 1.0
+    blended = np.where(mask_rs[..., None] > 0.5,
+                       (1 - alpha) * base + alpha * red_overlay, base)
+    mask_u8 = (mask_rs > 0.5).astype(np.uint8) * 255
+    contours, _ = cv2.findContours(mask_u8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    blended_u8 = (np.clip(blended, 0, 1) * 255).astype(np.uint8)
+    cv2.drawContours(blended_u8, contours, -1, (0, 255, 80), 2)
+    return Image.fromarray(blended_u8)
+
+
+def make_cam_overlay(base_img: Image.Image, cam: np.ndarray, alpha: float = 0.65):
+    """Grad-CAM: Gaussian-smoothed heatmap with turbo colormap for vivid visualization."""
+    import matplotlib.cm as cm
+    from scipy.ndimage import gaussian_filter
+    base = np.asarray(base_img).astype(np.float32) / 255.0
+    h, w = base.shape[:2]
+    cam_rs = np.array(Image.fromarray((cam * 255).astype(np.uint8)).resize((w, h),
+                      resample=Image.BILINEAR)) / 255.0
+    cam_smooth = gaussian_filter(cam_rs, sigma=8)
+    cam_norm = cam_smooth - cam_smooth.min()
+    if cam_norm.max() > 0:
+        cam_norm /= cam_norm.max()
+    colormap = cm.get_cmap("turbo")
+    colored = colormap(cam_norm)[..., :3]
+    heat_mask = (cam_norm > 0.2).astype(np.float32)
+    blended = (1 - alpha * heat_mask[..., None]) * base + (alpha * heat_mask[..., None]) * colored
+    return Image.fromarray((np.clip(blended, 0, 1) * 255).astype(np.uint8))
 
 
 @spaces.GPU
@@ -209,8 +234,8 @@ def diagnose(image):
 
     res = diagnose_image(image)
 
-    lesion_overlay = make_overlay(res["img"], res["pred_mask"].astype(np.float32), cmap="Reds")
-    cam_overlay = make_overlay(res["img"], res["cam"], cmap="jet")
+    lesion_overlay = make_lesion_overlay(res["img"], res["pred_mask"])
+    cam_overlay = make_cam_overlay(res["img"], res["cam"])
 
     flag = res["confidence_flag"]
     flag_note = (
