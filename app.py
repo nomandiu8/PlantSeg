@@ -37,6 +37,7 @@ import torchvision.transforms as T
 import timm
 import segmentation_models_pytorch as smp
 import gradio as gr
+import spaces
 from PIL import Image
 from pytorch_grad_cam import GradCAM
 from huggingface_hub import hf_hub_download
@@ -201,6 +202,7 @@ def make_overlay(base_img: Image.Image, mask_or_cam: np.ndarray, cmap: str, alph
     return Image.fromarray((blended * 255).astype(np.uint8))
 
 
+@spaces.GPU
 def diagnose(image):
     if image is None:
         return None, None, None, "Upload an image first."
