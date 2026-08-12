@@ -1,2 +1,11 @@
+[project]
+name = "plant-seg"
+version = "0.1.0"
+description = "Plant Disease Segmentation API"
+requires-python = ">=3.9"
+dependencies = [
+    "gradio_client",
+]
+
 [tool.vercel]
 entrypoint = "api.predict:handler"
