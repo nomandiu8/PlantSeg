@@ -26,7 +26,7 @@ class handler(BaseHTTPRequestHandler):
                 
             # Connect to Hugging Face API securely using Vercel Environment Variable
             hf_token = os.environ.get("HF_TOKEN")
-            client = Client("nomandiu9/diseases_prediction", hf_token=hf_token)
+            client = Client("nomandiu9/diseases_prediction", token=hf_token)
             
             # Make the prediction
             result = client.predict(
